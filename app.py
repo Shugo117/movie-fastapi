@@ -6,10 +6,14 @@ from typing import List, Dict, Any
 
 from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 from scrape import get_showtimes
 
 app = FastAPI()
+
+# static 配信（PWAのmanifest/sw/iconsを配る）
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 DEBUG = os.getenv("EIGA_DEBUG", "0") == "1"
 
@@ -32,7 +36,7 @@ CACHE_SECONDS = 300  # 5分
 def _norm(s: str) -> str:
     s = unicodedata.normalize("NFKC", s or "")
     s = s.lower().strip()
-    s = s.replace("？", "?")        # ★WHO？対策
+    s = s.replace("？", "?")  # ★WHO？対策
     s = re.sub(r"\s+", "", s)
     return s
 
@@ -62,12 +66,14 @@ def fetch_all_theaters() -> List[Dict[str, Any]]:
                 items = []
 
             for it in items:
-                all_items.append({
-                    "theater": theater_name,
-                    "theater_url": url,       # ★カードタップで飛ばす先（劇場ページ）
-                    "title": it.get("title", ""),
-                    "times": it.get("times", []),  # ★Last回は "～終了" が混ざる想定
-                })
+                all_items.append(
+                    {
+                        "theater": theater_name,
+                        "theater_url": url,  # ★カードタップで飛ばす先（劇場ページ）
+                        "title": it.get("title", ""),
+                        "times": it.get("times", []),  # ★Last回は "～終了" が混ざる想定
+                    }
+                )
 
         except Exception as e:
             if DEBUG:
@@ -190,12 +196,34 @@ def _page(title: str, q: str, body_html: str) -> str:
       .btn{width:100%; min-width:0}
     }
     """
+
+    # PWA用のhead追加（manifest / theme / iOS）
+    pwa_head = """
+        <link rel="manifest" href="/static/manifest.webmanifest">
+        <meta name="theme-color" content="#0b0d12">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="default">
+        <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    """
+
+    # Service Worker登録（</body>直前）
+    sw_register = """
+        <script>
+          if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => {
+              navigator.serviceWorker.register("/static/sw.js");
+            });
+          }
+        </script>
+    """
+
     return f"""
     <html>
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{title}</title>
+        {pwa_head}
         <style>{css}</style>
       </head>
       <body>
@@ -215,6 +243,7 @@ def _page(title: str, q: str, body_html: str) -> str:
 
           <div class="footer">カードを押すと劇場の上映ページへ飛びます（そこから購入導線）</div>
         </div>
+        {sw_register}
       </body>
     </html>
     """
@@ -247,7 +276,6 @@ def index(q: str = Query(default="")):
         times = "　".join(x.get("times", []))
         url = x.get("theater_url", "#")
 
-        # ★要求どおり：1枚カード内に「劇場名・タイトル・時間」
         cards.append(
             f"""
             <a class="cardlink" href="{url}" target="_blank" rel="noopener noreferrer">
@@ -263,7 +291,7 @@ def index(q: str = Query(default="")):
     cards.append("</div>")
     return _page("上映検索", q, "\n".join(cards))
 
+
 @app.head("/")
 def head_root():
     return HTMLResponse("")
-
