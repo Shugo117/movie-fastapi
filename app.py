@@ -262,3 +262,8 @@ def index(q: str = Query(default="")):
 
     cards.append("</div>")
     return _page("上映検索", q, "\n".join(cards))
+
+@app.head("/")
+def head_root():
+    return HTMLResponse("")
+
