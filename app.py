@@ -26,6 +26,7 @@ THEATERS = [
     ("柏キネマ旬報シアター", "https://eiga.com/theater/12/120208/3251/"),
     ("TOHOシネマズ柏", "https://eiga.com/theater/12/120208/3269/"),
     ("TOHOシネマズ 流山おおたかの森", "https://eiga.com/theater/12/120204/"),
+    ("早稲田松竹", "https://eiga.com/theater/13/130611/3071/"),
     ("グランドシネマサンシャイン池袋", "https://eiga.com/theater/13/130501/3291/"),
 ]
 
