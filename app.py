@@ -39,7 +39,7 @@ def _norm(s: str) -> str:
     s = s.replace("？", "?")
 
     # 記号・スペース削除（ここ追加）
-    s = re.sub(r"[^\wぁ-んァ-ン一-龥]", "", see)
+    s = re.sub(r"[^\wぁ-んァ-ン一-龥]", "", s)
 
     return s
 
