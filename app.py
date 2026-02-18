@@ -38,11 +38,10 @@ def _norm(s: str) -> str:
     s = s.lower().strip()
     s = s.replace("？", "?")
 
-    # 記号・スペース削除（ここ追加）
+    # 記号・スペース削除
     s = re.sub(r"[^\wぁ-んァ-ン一-龥]", "", s)
 
     return s
-
 
 
 def _today_md() -> str:
@@ -151,8 +150,8 @@ def _page(title: str, q: str, body_html: str) -> str:
       min-width:88px;
     }
     .btn:active{transform:translateY(1px)}
-    .meta{margin-top:12px;color:var(--muted);font-size:13px}
-    .results{margin-top:14px;display:grid;gap:10px}
+    .meta{margin-top:12px;color:var(--muted);font-size:13px;margin-bottom:6px}
+    .results{margin-top:10px;display:grid;gap:10px}
 
     /* 1作品=1カード（カード全体リンク） */
     .cardlink{
@@ -257,13 +256,31 @@ def _page(title: str, q: str, body_html: str) -> str:
 def index(q: str = Query(default="")):
     q2 = _norm(q)
 
+    # =========================
+    # 初期画面（検索してないとき）
+    # =========================
     if not q2:
-        body = '<div class="empty">映画タイトルを入力して検索してください。</div>'
-        return _page("上映検索", q, body)
+        body = """
+        <div class="meta">登録済み映画館</div>
+        <div class="box" style="margin-top:10px;">
+          <ul style="margin:0; padding-left:18px; line-height:1.9;">
+            {items}
+          </ul>
+        </div>
+        """
 
+        items = "\n".join(
+            f'<li><a href="{url}" target="_blank" rel="noopener noreferrer" style="color:inherit;">{name}</a></li>'
+            for name, url in THEATERS
+        )
+
+        return _page("上映検索", q, body.format(items=items))
+
+    # =========================
+    # 検索したとき（既存ロジック）
+    # =========================
     all_items = get_cached_all()
 
-    # ★ここがWHO？の肝：タイトル側もNFKCして「？→?」寄せる
     filtered = [x for x in all_items if q2 in _norm(x.get("title", ""))]
 
     if not filtered:
@@ -293,6 +310,7 @@ def index(q: str = Query(default="")):
         )
 
     cards.append("</div>")
+
     return _page("上映検索", q, "\n".join(cards))
 
 
