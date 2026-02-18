@@ -36,9 +36,13 @@ CACHE_SECONDS = 300  # 5分
 def _norm(s: str) -> str:
     s = unicodedata.normalize("NFKC", s or "")
     s = s.lower().strip()
-    s = s.replace("？", "?")  # ★WHO？対策
-    s = re.sub(r"\s+", "", s)
+    s = s.replace("？", "?")
+
+    # 記号・スペース削除（ここ追加）
+    s = re.sub(r"[^\wぁ-んァ-ン一-龥]", "", see)
+
     return s
+
 
 
 def _today_md() -> str:
